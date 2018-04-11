@@ -10,5 +10,6 @@ These are the supported commands by the CLI:
 *     -h (Help)
 *     ls (Lists all of the available DNS Routes)
 *     route <domain> (Prints the DNS route for the given domain)
+*     graph (Shows the graph of counted packets)
 
 It is interesting to see how many steps are taken to resolve certain domains over others. For example, when running this application in my house where there are multiple local devices using DNS I notice they resolve much quicker than DNS packets that are coming for outside.

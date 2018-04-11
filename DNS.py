@@ -1,8 +1,14 @@
 from scapy.all import *
 from threading import Thread
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+np.random.seed(sum(map(ord, "aesthetics")))
 
 # Dictionary mapping all of the routes
-routes = {}
+packets = []
 
 
 def get_dns_resp(packet):
@@ -11,6 +17,7 @@ def get_dns_resp(packet):
 
 
 def add_dns_route_entry(packet, dns_resp):
+    print packet.show()
     routelist = []
     for x in range(dns_resp[DNS].ancount):
         if dns_resp[DNSRR] != None:
@@ -24,10 +31,7 @@ def add_packet_route(packet):
 
 
 def packet_found(packet):
-    if packet.haslayer(DNS):
-        if packet.__contains__(DNSQR):
-            if routes.get(packet[DNSQR].qname) == None:
-                add_packet_route(packet)
+    packets.append(packet)
 
 
 def run_sniff():
@@ -44,11 +48,11 @@ def usage():
 
 
 def ls():
-    if not any(routes):
+    if not any(packets):
         print "No routes"
         return
 
-    for entry in routes:
+    for entry in packets:
         print entry
 
 
@@ -67,10 +71,26 @@ def print_route(domain):
 
 def print_graph():
     print "DNS GRAPH\n"
-    for domain in routes:
-        print_route(domain)
-        print '\n'
-        print "\t------------\n"
+    dns = 0
+    tcp = 0
+    ntp = 0
+    arp = 0
+    for packet in packets:
+        if packet.haslayer(DNS):
+            dns = dns + 1
+        elif packet.haslayer(TCP):
+            tcp = tcp + 1
+        elif packet.haslayer(NTP):
+            ntp = ntp + 1
+        elif packet.haslayer(ARP):
+            arp = arp + 1
+    df = pd.DataFrame()
+    df['dns'] = [dns]
+    df['tcp'] = [tcp]
+    df['ntp'] = [ntp]
+    df['arp'] = [arp]
+    sns.barplot(data=df)
+    plt.show()
 
 if __name__ == '__main__':
     thread = Thread(target=run_sniff)
@@ -86,6 +106,8 @@ if __name__ == '__main__':
             ls()
         elif action == "graph":
             print_graph()
+        elif action == "exit":
+            plt.close()
         elif action.startswith("route"):
             argv = action.split(" ")
             if len(argv) != 2:
